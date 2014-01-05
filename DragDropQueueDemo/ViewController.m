@@ -58,7 +58,6 @@
         LineViewController *l = [_lines objectAtIndex:i];
         CGPoint p = [sender locationInView:l.collectionView];
         if (CGRectContainsPoint(l.collectionView.frame, p)) {   //找到CollectionView
-            NSLog(@"found collectionView:%@", l.collectionView);
             selectedLine = l;
             locationInCollectionView = [sender locationInView:selectedLine.collectionView];
         }
@@ -105,15 +104,15 @@
         _dragView.center = location;
         [self.view bringSubviewToFront:_dragView];
         
-        //挪到哪个line，哪个变色（玩玩）
-        [self clearColor];
-        [selectedLine.view setBackgroundColor:[UIColor yellowColor]];
-
+        //挪到哪个line，哪个变色玩玩
+        [self highlightLine:selectedLine];
         return;
     }
     
     if (sender.state == UIGestureRecognizerStateEnded) {
-        if (!_dragView) {
+        [self highlightLine:nil];
+        if (!_dragView || !selectedLine) {
+            _dragView = NULL;
             return;
         }
         _dragView = NULL;
@@ -122,10 +121,15 @@
 
 }
 
-- (void)clearColor {
+- (void)highlightLine:(LineViewController *)selected {
+    
     for (int i=0; i<_lines.count; i++) {
         LineViewController *l = [_lines objectAtIndex:i];
         l.view.backgroundColor = [UIColor clearColor];
+    }
+    
+    if (selected) {
+        [selected.view setBackgroundColor:[UIColor yellowColor]];
     }
 }
 
