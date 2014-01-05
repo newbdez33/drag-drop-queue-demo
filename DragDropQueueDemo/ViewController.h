@@ -8,6 +8,13 @@
 
 #import <UIKit/UIKit.h>
 
-@interface ViewController : UIViewController
+@interface ViewController : UIViewController {
+    NSMutableArray *_lines;
+    UIView *_dragView;
+    CGPoint _dragStartLocation;
+    NSMutableArray *_data;
+}
+
+- (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender;
 
 @end
