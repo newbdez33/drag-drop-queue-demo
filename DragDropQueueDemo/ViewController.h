@@ -13,6 +13,7 @@
     UIView *_dragView;
     CGPoint _dragStartLocation;
     NSMutableArray *_data;
+    NSObject *_cellObject;
 }
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender;

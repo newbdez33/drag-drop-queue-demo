@@ -52,7 +52,7 @@
     
     
     //找到当前的Line
-    LineViewController *selectedLine = NULL;
+    LineViewController *selectedLine = nil;
     CGPoint locationInCollectionView = CGPointZero;
     for (int i=0; i<_lines.count; i++) {
         LineViewController *l = [_lines objectAtIndex:i];
@@ -66,32 +66,34 @@
     
     if (sender.state == UIGestureRecognizerStateBegan) {
         
-        if (selectedLine==NULL) {
+        if (selectedLine==nil) {
             return;
         }
         
-        if (CGRectContainsPoint(selectedLine.collectionView.frame, locationInCollectionView)) {   //找到CollectionView
-            NSIndexPath *idx = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];    //找到Cell index
-            if (idx) {
-                
-                //抽出cell view
-                PSTCollectionViewCell *cell = [selectedLine.collectionView cellForItemAtIndexPath:idx];
-                _dragView = [cell.contentView viewWithTag:cell.tag];
-                [_dragView removeFromSuperview];
-                [self.view addSubview:_dragView];
-                
-                //移除cell
-                [selectedLine.data removeObjectAtIndex:idx.item];
-                [selectedLine.collectionView deleteItemsAtIndexPaths:@[idx]];
-                
-                //TODO center可以优化
-                _dragView.center = [self.view convertPoint:locationInCollectionView fromView:selectedLine.collectionView];
-                _dragStartLocation = _dragView.center;
-                [self.view bringSubviewToFront:_dragView];
-                return;
-            }
+        //找到Cell index
+        NSIndexPath *selectedIndex = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        if (selectedIndex) {
             
+            //抽出cell object
+            _cellObject = [selectedLine.data objectAtIndex:selectedIndex.item];
+            
+            //抽出cell view
+            PSTCollectionViewCell *cell = [selectedLine.collectionView cellForItemAtIndexPath:selectedIndex];
+            _dragView = [cell.contentView viewWithTag:cell.tag];
+            [_dragView removeFromSuperview];
+            [self.view addSubview:_dragView];
+            
+            //移除cell
+            [selectedLine.data removeObjectAtIndex:selectedIndex.item];
+            [selectedLine.collectionView deleteItemsAtIndexPaths:@[selectedIndex]];
+            
+            //TODO center可以优化
+            _dragView.center = [self.view convertPoint:locationInCollectionView fromView:selectedLine.collectionView];
+            _dragStartLocation = _dragView.center;
+            [self.view bringSubviewToFront:_dragView];
+            return;
         }
+        
 
     }
     
@@ -104,7 +106,7 @@
         _dragView.center = location;
         [self.view bringSubviewToFront:_dragView];
         
-        //挪到哪个line，哪个变色玩玩
+        //挪到哪个line，高亮
         [self highlightLine:selectedLine];
         return;
     }
@@ -112,10 +114,18 @@
     if (sender.state == UIGestureRecognizerStateEnded) {
         [self highlightLine:nil];
         if (!_dragView || !selectedLine) {
-            _dragView = NULL;
+            _dragView = nil;
             return;
         }
-        _dragView = NULL;
+        
+        //找到Cell index
+        NSIndexPath *selectedIndex = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        
+        [selectedLine.data insertObject:_cellObject atIndex:selectedIndex.item];
+        [selectedLine.collectionView insertItemsAtIndexPaths:@[selectedIndex]];
+
+        [_dragView removeFromSuperview];
+        _dragView = nil;
     }
     
 
