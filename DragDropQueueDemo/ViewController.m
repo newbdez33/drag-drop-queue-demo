@@ -51,16 +51,18 @@
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender {
     
-    
     //找到当前的Line
     LineViewController *selectedLine = nil;
     CGPoint locationInCollectionView = CGPointZero;
     for (int i=0; i<_lines.count; i++) {
         LineViewController *l = [_lines objectAtIndex:i];
         CGPoint p = [sender locationInView:l.collectionView];
+        p.x -= l.collectionView.contentOffset.x;
+        //NSLog(@"检查:%@", NSStringFromCGRect(l.collectionView.frame));
         if (CGRectContainsPoint(l.collectionView.frame, p)) {   //找到CollectionView
             selectedLine = l;
             locationInCollectionView = [sender locationInView:selectedLine.collectionView];
+            //locationInCollectionView.x -= l.collectionView.contentOffset.x;
         }
     }
     
@@ -68,6 +70,7 @@
     if (sender.state == UIGestureRecognizerStateBegan) {
         
         if (selectedLine==nil) {
+            NSLog(@"没有按在collectionView上。");
             return;
         }
         
@@ -80,6 +83,8 @@
             _cellIndex = selectedIndex.item;
             self.originLine = selectedLine;
             
+            NSLog(@"拿起:%@ at:%i", self.selectedCellObject, _cellIndex);
+            
             //抽出cell view
             PSTCollectionViewCell *cell = [selectedLine.collectionView cellForItemAtIndexPath:selectedIndex];
             _dragView = [cell.contentView viewWithTag:cell.tag];
@@ -87,10 +92,11 @@
             [self.view addSubview:_dragView];
             
             //移除cell
-            [selectedLine.data removeObjectAtIndex:selectedIndex.item];
             [selectedLine.collectionView performBatchUpdates:^{
                 [selectedLine.collectionView deleteItemsAtIndexPaths:@[selectedIndex]];
+                [selectedLine.data removeObjectAtIndex:selectedIndex.item];
             } completion:^(BOOL finished) {
+                NSLog(@"删除后计：:%i", selectedLine.data.count);
             }];
             
             //TODO center可以优化
@@ -98,6 +104,8 @@
             _dragStartLocation = _dragView.center;
             [self.view bringSubviewToFront:_dragView];
             return;
+        }else {
+            NSLog(@"没找按下的cell Index.");
         }
         
 
@@ -109,6 +117,7 @@
         }
         
         CGPoint location = [sender locationInView:self.view];
+        //location.x -= selectedLine.collectionView.contentOffset.x;
         _dragView.center = location;
         [self.view bringSubviewToFront:_dragView];
         
@@ -124,20 +133,23 @@
             return;
         }
         
-        NSIndexPath *selectedIndex = nil;
+        NSIndexPath *selectedIndex = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
         
-        if(!selectedLine) { //没拖到line上的情况
+        if(!selectedLine || !selectedIndex) { //没拖到line上的情况
             selectedLine = self.originLine;
             selectedIndex = [NSIndexPath indexPathForItem:_cellIndex inSection:0];
-        }else {
-            //找到Cell index
-            selectedIndex = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        }
+        
+        if (!selectedIndex) {
+            _dragView = nil;
+            return;
         }
 
-        [selectedLine.data insertObject:self.selectedCellObject atIndex:selectedIndex.item];
         [selectedLine.collectionView performBatchUpdates:^{
+            [selectedLine.data insertObject:self.selectedCellObject atIndex:selectedIndex.item];
             [selectedLine.collectionView insertItemsAtIndexPaths:@[selectedIndex]];
         } completion:^(BOOL finished) {
+            NSLog(@"插入后计:%i", selectedLine.data.count);
             //[selectedLine.collectionView reloadItemsAtIndexPaths:@[selectedIndex]];
             [selectedLine.collectionView reloadData];
         }];
