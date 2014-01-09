@@ -8,13 +8,19 @@
 
 #import <UIKit/UIKit.h>
 
+@class LineViewController;
+
 @interface ViewController : UIViewController {
     NSMutableArray *_lines;
     UIView *_dragView;
     CGPoint _dragStartLocation;
     NSMutableArray *_data;
-    NSObject *_cellObject;
+    NSInteger _cellIndex;
+    
 }
+
+@property (strong, nonatomic) NSObject *selectedCellObject;
+@property (strong, nonatomic) LineViewController *originLine;
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender;
 

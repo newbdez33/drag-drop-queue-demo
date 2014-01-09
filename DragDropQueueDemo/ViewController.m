@@ -9,8 +9,9 @@
 #import "ViewController.h"
 #import "LineLayout.h"
 #import "LineViewController.h"
+#import "NSIndexPath+PSTCollectionViewAdditions.h"
 
-#define LINE_COUNT  3
+#define LINE_COUNT  4
 #define TOP_OFFSET  100
 
 @interface ViewController ()
@@ -75,7 +76,9 @@
         if (selectedIndex) {
             
             //抽出cell object
-            _cellObject = [selectedLine.data objectAtIndex:selectedIndex.item];
+            self.selectedCellObject = [selectedLine.data objectAtIndex:selectedIndex.item];
+            _cellIndex = selectedIndex.item;
+            self.originLine = selectedLine;
             
             //抽出cell view
             PSTCollectionViewCell *cell = [selectedLine.collectionView cellForItemAtIndexPath:selectedIndex];
@@ -85,7 +88,10 @@
             
             //移除cell
             [selectedLine.data removeObjectAtIndex:selectedIndex.item];
-            [selectedLine.collectionView deleteItemsAtIndexPaths:@[selectedIndex]];
+            [selectedLine.collectionView performBatchUpdates:^{
+                [selectedLine.collectionView deleteItemsAtIndexPaths:@[selectedIndex]];
+            } completion:^(BOOL finished) {
+            }];
             
             //TODO center可以优化
             _dragView.center = [self.view convertPoint:locationInCollectionView fromView:selectedLine.collectionView];
@@ -113,17 +119,28 @@
     
     if (sender.state == UIGestureRecognizerStateEnded) {
         [self highlightLine:nil];
-        if (!_dragView || !selectedLine) {
+        if (!_dragView) {
             _dragView = nil;
             return;
         }
         
-        //找到Cell index
-        NSIndexPath *selectedIndex = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        NSIndexPath *selectedIndex = nil;
         
-        [selectedLine.data insertObject:_cellObject atIndex:selectedIndex.item];
-        [selectedLine.collectionView insertItemsAtIndexPaths:@[selectedIndex]];
+        if(!selectedLine) { //没拖到line上的情况
+            selectedLine = self.originLine;
+            selectedIndex = [NSIndexPath indexPathForItem:_cellIndex inSection:0];
+        }else {
+            //找到Cell index
+            selectedIndex = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        }
 
+        [selectedLine.data insertObject:self.selectedCellObject atIndex:selectedIndex.item];
+        [selectedLine.collectionView performBatchUpdates:^{
+            [selectedLine.collectionView insertItemsAtIndexPaths:@[selectedIndex]];
+        } completion:^(BOOL finished) {
+            //[selectedLine.collectionView reloadItemsAtIndexPaths:@[selectedIndex]];
+            [selectedLine.collectionView reloadData];
+        }];
         [_dragView removeFromSuperview];
         _dragView = nil;
     }
