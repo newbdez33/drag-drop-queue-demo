@@ -10,9 +10,20 @@
 #import "LineLayout.h"
 #import "LineViewController.h"
 #import "NSIndexPath+PSTCollectionViewAdditions.h"
+#import "Cell.h"
 
 #define LINE_COUNT  4
 #define TOP_OFFSET  100
+
+@implementation UIView (OPCloning)
+
+- (id) clone {
+    NSData *archivedViewData = [NSKeyedArchiver archivedDataWithRootObject: self];
+    id clone = [NSKeyedUnarchiver unarchiveObjectWithData:archivedViewData];
+    return clone;
+}
+
+@end
 
 @interface ViewController ()
 
@@ -23,21 +34,34 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    _data = [NSMutableArray array];
-    for (int lc=0; lc<LINE_COUNT; lc++) {
-        NSMutableArray *la = [NSMutableArray array];
-        for (int i=0; i<30; i++) {
-            [la addObject:[NSString stringWithFormat:@"%i|%i", lc, i]];
-        }
-        [_data addObject:la];
-    }
+    NSLog(@"Init data...");
     
     //初始化排队
     _lines = [[NSMutableArray alloc] initWithCapacity:LINE_COUNT];
-    LineLayout* lineLayout = [[LineLayout alloc] init];
     for (int i=0; i<LINE_COUNT; i++) {
+        LineLayout* lineLayout = [[LineLayout alloc] init];
         LineViewController *line = [[LineViewController alloc] initWithCollectionViewLayout:lineLayout];
-        line.data = [NSMutableArray arrayWithArray:[_data objectAtIndex:i]];
+        line.name = [NSString stringWithFormat:@"L%i", i];
+//        switch(i) {
+//            case 0:
+//                line.view.backgroundColor = [UIColor redColor];
+//                break;
+//            case 1:
+//                line.view.backgroundColor = [UIColor orangeColor];
+//                break;
+//            case 2:
+//                line.view.backgroundColor = [UIColor greenColor];
+//                break;
+//            case 3:
+//                line.view.backgroundColor = [UIColor blueColor];
+//                break;
+//        }
+        
+        line.data = [NSMutableArray array];
+        for (int j=0; j<30; j++) {
+            [line.data addObject:[NSString stringWithFormat:@"%i|%i", i, j]];
+        }
+        
         //为什么320才显示正常？
         [line.view setFrame:CGRectMake(10, TOP_OFFSET + 150 * i, self.view.frame.size.width - 20, 325)];
         [_lines addObject:line];
@@ -51,58 +75,58 @@
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender {
     
-    //找到当前的Line
-    LineViewController *selectedLine = nil;
-    CGPoint locationInCollectionView = CGPointZero;
-    for (int i=0; i<_lines.count; i++) {
-        LineViewController *l = [_lines objectAtIndex:i];
-        CGPoint p = [sender locationInView:l.collectionView];
-        p.x -= l.collectionView.contentOffset.x;
-        //NSLog(@"检查:%@", NSStringFromCGRect(l.collectionView.frame));
-        if (CGRectContainsPoint(l.collectionView.frame, p)) {   //找到CollectionView
-            selectedLine = l;
-            locationInCollectionView = [sender locationInView:selectedLine.collectionView];
-            //locationInCollectionView.x -= l.collectionView.contentOffset.x;
-        }
-    }
-    
     
     if (sender.state == UIGestureRecognizerStateBegan) {
         
-        if (selectedLine==nil) {
+        self.sourceLine = nil;
+        CGPoint locationInCollectionView = CGPointZero;
+        for (int i=0; i<_lines.count; i++) {
+            LineViewController *l = [_lines objectAtIndex:i];
+            CGPoint p = [sender locationInView:l.collectionView];
+            p.x -= l.collectionView.contentOffset.x;
+            if (CGRectContainsPoint(l.collectionView.frame, p)) {   //找到CollectionView
+                self.sourceLine = l;
+                locationInCollectionView = [sender locationInView:self.sourceLine.collectionView];
+                l = nil;
+                break;
+            }
+            l = nil;
+        }
+        
+        if (self.sourceLine==nil) {
             NSLog(@"没有按在collectionView上。");
             return;
         }
+        NSLog(@"%@ is selected", self.sourceLine.name);
         
         //找到Cell index
-        NSIndexPath *selectedIndex = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        NSIndexPath *selectedIndex = [self.sourceLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
         if (selectedIndex) {
             
-            //抽出cell object
-            self.selectedCellObject = [selectedLine.data objectAtIndex:selectedIndex.item];
-            _cellIndex = selectedIndex.item;
-            self.originLine = selectedLine;
-            
-            NSLog(@"拿起:%@ at:%i", self.selectedCellObject, _cellIndex);
-            
             //抽出cell view
-            PSTCollectionViewCell *cell = [selectedLine.collectionView cellForItemAtIndexPath:selectedIndex];
-            _dragView = [cell.contentView viewWithTag:cell.tag];
-            [_dragView removeFromSuperview];
+            Cell *cell = (Cell *)[self.sourceLine.collectionView cellForItemAtIndexPath:selectedIndex];
+            
+            _cellIndex = selectedIndex.item;
+            self.draggingUserData = cell.userData;
+            
+            NSLog(@"拿起:%@ at:%i", cell.userData, selectedIndex.item);
+            UIView *cellView = [cell.contentView viewWithTag:cell.tag];
+            _dragView = [cellView clone];
             [self.view addSubview:_dragView];
             
-            //移除cell
-            [selectedLine.collectionView performBatchUpdates:^{
-                [selectedLine.collectionView deleteItemsAtIndexPaths:@[selectedIndex]];
-                [selectedLine.data removeObjectAtIndex:selectedIndex.item];
+            //不移除cell了
+            [self.sourceLine.data removeObjectAtIndex:selectedIndex.item];
+            [self.sourceLine.collectionView performBatchUpdates:^{
+                [self.sourceLine.collectionView deleteItemsAtIndexPaths:@[selectedIndex]];
             } completion:^(BOOL finished) {
-                NSLog(@"删除后计：:%i", selectedLine.data.count);
+                NSLog(@"删除后计：:%i", self.sourceLine.data.count);
+                //[self.sourceLine.collectionView reloadData];
             }];
             
-            //TODO center可以优化
-            _dragView.center = [self.view convertPoint:locationInCollectionView fromView:selectedLine.collectionView];
+            _dragView.center = [self.view convertPoint:locationInCollectionView fromView:self.sourceLine.collectionView];
             _dragStartLocation = _dragView.center;
             [self.view bringSubviewToFront:_dragView];
+            
             return;
         }else {
             NSLog(@"没找按下的cell Index.");
@@ -110,11 +134,25 @@
         
 
     }
-    
+
     if (sender.state == UIGestureRecognizerStateChanged) {
         if (!_dragView) {
             return;
         }
+        
+        self.destnationLine = nil;
+        for (int i=0; i<_lines.count; i++) {
+            LineViewController *l = [_lines objectAtIndex:i];
+            CGPoint p = [sender locationInView:l.collectionView];
+            p.x -= l.collectionView.contentOffset.x;
+            if (CGRectContainsPoint(l.collectionView.frame, p)) {   //找到CollectionView
+                self.destnationLine = l;
+                l = nil;
+                break;
+            }
+            l = nil;
+        }
+
         
         CGPoint location = [sender locationInView:self.view];
         //location.x -= selectedLine.collectionView.contentOffset.x;
@@ -122,10 +160,10 @@
         [self.view bringSubviewToFront:_dragView];
         
         //挪到哪个line，高亮
-        [self highlightLine:selectedLine];
+        [self highlightLine:self.destnationLine];
         return;
     }
-    
+
     if (sender.state == UIGestureRecognizerStateEnded) {
         [self highlightLine:nil];
         if (!_dragView) {
@@ -133,11 +171,26 @@
             return;
         }
         
-        NSIndexPath *selectedIndex = [selectedLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        self.destnationLine = nil;
+        CGPoint locationInCollectionView = CGPointZero;
+        for (int i=0; i<_lines.count; i++) {
+            LineViewController *l = [_lines objectAtIndex:i];
+            CGPoint p = [sender locationInView:l.collectionView];
+            p.x -= l.collectionView.contentOffset.x;
+            if (CGRectContainsPoint(l.collectionView.frame, p)) {   //找到CollectionView
+                self.destnationLine = l;
+                locationInCollectionView = [sender locationInView:self.destnationLine.collectionView];
+                l = nil;
+                break;
+            }
+            l = nil;
+        }
         
-        if(!selectedLine || !selectedIndex) { //没拖到line上的情况
-            selectedLine = self.originLine;
+        NSIndexPath *selectedIndex = [self.destnationLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        
+        if(!self.destnationLine || !selectedIndex) { //没拖到line上的情况
             selectedIndex = [NSIndexPath indexPathForItem:_cellIndex inSection:0];
+            self.destnationLine = self.sourceLine;
         }
         
         if (!selectedIndex) {
@@ -145,13 +198,13 @@
             return;
         }
 
-        [selectedLine.collectionView performBatchUpdates:^{
-            [selectedLine.data insertObject:self.selectedCellObject atIndex:selectedIndex.item];
-            [selectedLine.collectionView insertItemsAtIndexPaths:@[selectedIndex]];
+        [self.destnationLine.collectionView performBatchUpdates:^{
+            [self.destnationLine.data insertObject:self.draggingUserData atIndex:selectedIndex.item];
+            [self.destnationLine.collectionView insertItemsAtIndexPaths:@[selectedIndex]];
         } completion:^(BOOL finished) {
-            NSLog(@"插入后计:%i", selectedLine.data.count);
-            //[selectedLine.collectionView reloadItemsAtIndexPaths:@[selectedIndex]];
-            [selectedLine.collectionView reloadData];
+            NSLog(@"插入后计:%i", self.destnationLine.data.count);
+            [self.destnationLine.collectionView reloadItemsAtIndexPaths:@[selectedIndex]];
+            //[selectedLine.collectionView reloadData];
         }];
         [_dragView removeFromSuperview];
         _dragView = nil;

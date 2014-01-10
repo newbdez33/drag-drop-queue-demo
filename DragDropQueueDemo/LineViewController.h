@@ -11,5 +11,6 @@
 @interface LineViewController : PSTCollectionViewController
 
 @property (nonatomic, strong) NSMutableArray *data;
+@property (nonatomic, strong) NSString *name;
 
 @end

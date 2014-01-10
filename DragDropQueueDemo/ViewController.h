@@ -14,13 +14,13 @@
     NSMutableArray *_lines;
     UIView *_dragView;
     CGPoint _dragStartLocation;
-    NSMutableArray *_data;
     NSInteger _cellIndex;
     
 }
 
-@property (strong, nonatomic) NSObject *selectedCellObject;
-@property (strong, nonatomic) LineViewController *originLine;
+@property (strong, nonatomic) LineViewController *sourceLine;
+@property (strong, nonatomic) LineViewController *destnationLine;
+@property (strong, nonatomic) NSString *draggingUserData;
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender;
 

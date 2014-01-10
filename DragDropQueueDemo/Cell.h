@@ -97,5 +97,6 @@
 @interface Cell : PSTCollectionViewCell
 
 @property (strong, nonatomic) UILabel* label;
+@property (strong, nonatomic) NSString *userData;
 
 @end

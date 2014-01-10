@@ -19,16 +19,33 @@
     self.collectionView.backgroundColor = [UIColor clearColor];
 }
 
+-(NSInteger)numberOfSectionsInCollectionView:(PSTCollectionView *)collectionView
+{
+    return 1;
+}
+
 - (NSInteger)collectionView:(PSTCollectionView *)view numberOfItemsInSection:(NSInteger)section;
 {
-    return _data.count;
+    NSLog(@"%@ count:%i", self.name, self.data.count);
+    return self.data.count;
 }
 
 - (PSTCollectionViewCell *)collectionView:(PSTCollectionView *)cv cellForItemAtIndexPath:(NSIndexPath *)indexPath;
 {
+    
     Cell *cell = [cv dequeueReusableCellWithReuseIdentifier:@"MY_CELL" forIndexPath:indexPath];
-    cell.label.text = [_data objectAtIndex:indexPath.item];
+    if(self.data.count > indexPath.item) {
+        cell.label.text = [self.data objectAtIndex:indexPath.item];
+        NSString *userData = [self.data objectAtIndex:indexPath.item];
+        cell.userData = userData;
+    }else {
+        NSLog(@"%@数组越界：%i, %i", self.name, self.data.count, indexPath.item);
+        cell.label.text = @"N/A";
+    }
+    
     return cell;
 }
+
+
 
 @end
