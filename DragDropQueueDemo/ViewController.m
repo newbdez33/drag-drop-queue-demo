@@ -12,8 +12,8 @@
 #import "NSIndexPath+PSTCollectionViewAdditions.h"
 #import "Cell.h"
 
-#define LINE_COUNT  4
-#define TOP_OFFSET  100
+#define LINE_COUNT  15
+#define TOP_OFFSET  50
 
 @implementation UIView (OPCloning)
 
@@ -63,14 +63,15 @@
         }
         
         //为什么320才显示正常？
-        [line.view setFrame:CGRectMake(10, TOP_OFFSET + 150 * i, self.view.frame.size.width - 20, 325)];
+        [line.view setFrame:CGRectMake(10, TOP_OFFSET + 80 * i, self.scrollView.frame.size.width - 20, 325)];
         [_lines addObject:line];
-        [self.view addSubview:line.view];
+        [self.scrollView addSubview:line.view];
+        [self.scrollView setContentSize:CGSizeMake(self.scrollView.frame.size.width, line.view.frame.origin.y + 100)];
     }
     
     //手势
     UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPressGesture:)];
-    [self.view addGestureRecognizer:longPressGesture];
+    [self.scrollView addGestureRecognizer:longPressGesture];
 }
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender {
@@ -112,7 +113,7 @@
             NSLog(@"拿起:%@ at:%i", cell.userData, selectedIndex.item);
             UIView *cellView = [cell.contentView viewWithTag:cell.tag];
             _dragView = [cellView clone];
-            [self.view addSubview:_dragView];
+            [self.scrollView addSubview:_dragView];
             
             //不移除cell了
             [self.sourceLine.data removeObjectAtIndex:selectedIndex.item];
@@ -123,9 +124,9 @@
                 //[self.sourceLine.collectionView reloadData];
             }];
             
-            _dragView.center = [self.view convertPoint:locationInCollectionView fromView:self.sourceLine.collectionView];
+            _dragView.center = [self.scrollView convertPoint:locationInCollectionView fromView:self.sourceLine.collectionView];
             _dragStartLocation = _dragView.center;
-            [self.view bringSubviewToFront:_dragView];
+            [self.scrollView bringSubviewToFront:_dragView];
             
             return;
         }else {
@@ -154,10 +155,10 @@
         }
 
         
-        CGPoint location = [sender locationInView:self.view];
+        CGPoint location = [sender locationInView:self.scrollView];
         //location.x -= selectedLine.collectionView.contentOffset.x;
         _dragView.center = location;
-        [self.view bringSubviewToFront:_dragView];
+        [self.scrollView bringSubviewToFront:_dragView];
         
         //挪到哪个line，高亮
         [self highlightLine:self.destnationLine];
@@ -227,6 +228,10 @@
     if (selected) {
         [selected.view setBackgroundColor:[UIColor yellowColor]];
     }
+}
+
+- (BOOL)shouldAutorotate {
+    return YES;
 }
 
 @end

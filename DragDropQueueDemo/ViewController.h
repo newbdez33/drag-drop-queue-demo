@@ -21,6 +21,7 @@
 @property (strong, nonatomic) LineViewController *sourceLine;
 @property (strong, nonatomic) LineViewController *destnationLine;
 @property (strong, nonatomic) NSString *draggingUserData;
+@property (strong, nonatomic) IBOutlet UIScrollView *scrollView;
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender;
 
