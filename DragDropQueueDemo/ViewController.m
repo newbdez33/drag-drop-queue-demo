@@ -187,6 +187,10 @@
         }
         
         NSIndexPath *selectedIndex = [self.destnationLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        UIView *cell = [self.destnationLine.collectionView cellForItemAtIndexPath:selectedIndex];
+        if (locationInCollectionView.x > cell.center.x) {
+            selectedIndex = [NSIndexPath indexPathForRow:selectedIndex.item+1 inSection:0];
+        }
         
         if(!self.destnationLine || !selectedIndex) { //没拖到line上的情况
             selectedIndex = [NSIndexPath indexPathForItem:_cellIndex inSection:0];
