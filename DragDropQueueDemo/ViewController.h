@@ -16,6 +16,8 @@
     CGPoint _dragStartLocation;
     NSInteger _cellIndex;
     
+    NSInteger _continueToScroll; //TODO ENUM: UP/DOWN/NONE
+    
 }
 
 @property (strong, nonatomic) LineViewController *sourceLine;

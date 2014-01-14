@@ -76,6 +76,8 @@
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender {
     
+    _continueToScroll = 0;
+    
     
     if (sender.state == UIGestureRecognizerStateBegan) {
         
@@ -162,6 +164,14 @@
         
         //挪到哪个line，高亮
         [self highlightLine:self.destnationLine];
+        
+        float offset = _dragView.frame.origin.y + _dragView.frame.size.height - self.scrollView.frame.size.height;
+        if (offset > 0) {
+            NSLog(@"offset:%f", offset);
+            _continueToScroll = 1;  //DOWN
+            [self scrollTo];
+        }
+        
         return;
     }
 
@@ -216,6 +226,20 @@
     }
     
 
+}
+
+- (void)scrollTo {
+    
+    if (_continueToScroll!=1) { //TODO support UP
+        return;
+    }
+    
+    CGPoint next = CGPointMake(self.scrollView.contentOffset.x, self.scrollView.contentOffset.y+1);
+    NSLog(@"next:%@", NSStringFromCGPoint(next));
+    self.scrollView.contentOffset = next;
+    [self performSelector:@selector(scrollTo) withObject:nil afterDelay:0.1];
+    
+    //TODO 判断停止时机
 }
 
 - (void)highlightLine:(LineViewController *)selected {
