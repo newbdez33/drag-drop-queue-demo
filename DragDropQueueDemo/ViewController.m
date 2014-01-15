@@ -13,7 +13,7 @@
 #import "Cell.h"
 
 #define LINE_COUNT  15
-#define TOP_OFFSET  50
+#define TOP_OFFSET  100
 
 @implementation UIView (OPCloning)
 
@@ -76,7 +76,8 @@
 
 - (void)handleLongPressGesture:(UILongPressGestureRecognizer *)sender {
     
-    _continueToScroll = 0;
+    scrollFlagForV = stop;
+    scrollFlagForH = stop;
     
     
     if (sender.state == UIGestureRecognizerStateBegan) {
@@ -148,8 +149,22 @@
             LineViewController *l = [_lines objectAtIndex:i];
             CGPoint p = [sender locationInView:l.collectionView];
             p.x -= l.collectionView.contentOffset.x;
-            if (CGRectContainsPoint(l.collectionView.frame, p)) {   //找到CollectionView
+            if (CGRectContainsPoint(l.collectionView.frame, p)) {
+                //找到CollectionView
                 self.destnationLine = l;
+                //left and right scroll
+                if ((_dragView.frame.origin.x - _dragView.frame.size.width < self.scrollView.frame.origin.x) && [self.destnationLine.collectionView numberOfItemsInSection:0]>15) {
+                    
+                    scrollFlagForH = up;
+                    [self scrollToH];
+                    
+                }
+                if((_dragView.frame.origin.x + _dragView.frame.size.width > self.scrollView.frame.origin.x + self.scrollView.frame.size.width) && [self.destnationLine.collectionView numberOfItemsInSection:0]>15){
+                    scrollFlagForH = down;
+                    [self scrollToH];
+                }
+
+                // end by sjk
                 l = nil;
                 break;
             }
@@ -165,13 +180,17 @@
         //挪到哪个line，高亮
         [self highlightLine:self.destnationLine];
         
-        float offset = _dragView.frame.origin.y + _dragView.frame.size.height - self.scrollView.frame.size.height;
-        if (offset > 0) {
-            NSLog(@"offset:%f", offset);
-            _continueToScroll = 1;  //DOWN
-            [self scrollTo];
+        //top and buttom scroll
+     
+        if(_dragView.frame.origin.y -_dragView.frame.size.height - self.scrollView.contentOffset.y  < self.scrollView.frame.origin.y){
+            scrollFlagForV = up;
+            [self scrollToV];
         }
-        
+        if(_dragView.frame.origin.y + _dragView.frame.size.height > self.scrollView.frame.size.height + self.scrollView.frame.origin.y){
+            scrollFlagForV = down;
+            [self scrollToV];
+        }
+        // end by sjk
         return;
     }
 
@@ -231,19 +250,72 @@
 
 }
 
-- (void)scrollTo {
+#pragma -mark direct diferent scroll view
+
+//垂直滚动
+- (void)scrollToV {
+    CGPoint next;
     
-    if (_continueToScroll!=1) { //TODO support UP
-        return;
+    switch (scrollFlagForV) {
+        case stop:
+            return;
+            break;
+        case up:
+            next = CGPointMake(self.scrollView.contentOffset.x, self.scrollView.contentOffset.y-1);
+            if (next.y<0)
+            {
+                return;
+            }
+            break;
+        case down:
+            next = CGPointMake(self.scrollView.contentOffset.x, self.scrollView.contentOffset.y+1);
+            if (next.y > self.scrollView.frame.size.height-100)
+            {
+                return;
+            }
+            break;
+        default:
+            break;
     }
     
-    CGPoint next = CGPointMake(self.scrollView.contentOffset.x, self.scrollView.contentOffset.y+1);
+    
     NSLog(@"next:%@", NSStringFromCGPoint(next));
     self.scrollView.contentOffset = next;
-    [self performSelector:@selector(scrollTo) withObject:nil afterDelay:0.1];
+    [self performSelector:@selector(scrollToV) withObject:nil afterDelay:0.1];
     
-    //TODO 判断停止时机
 }
+
+//水平滚动
+- (void)scrollToH {
+    CGPoint next;
+    
+    switch (scrollFlagForH) {
+        case stop:
+            return;
+            break;
+        case up:
+            next = CGPointMake(self.destnationLine.collectionView.contentOffset.x-3,self.destnationLine.collectionView.contentOffset.y);
+            if (next.x<0)
+            {
+                return;
+            }
+            break;
+        case down:
+            next = CGPointMake(self.destnationLine.collectionView.contentOffset.x+3,self.destnationLine.collectionView.contentOffset.y);
+            if (next.x > self.destnationLine.collectionView.frame.size.width)
+            {
+                return;
+            }
+            break;
+        default:
+            break;
+    }
+    
+    NSLog(@"next:%@", NSStringFromCGPoint(next));
+    self.destnationLine.collectionView.contentOffset = next;
+    [self performSelector:@selector(scrollToH) withObject:nil afterDelay:0.1];
+}
+
 
 - (void)highlightLine:(LineViewController *)selected {
     

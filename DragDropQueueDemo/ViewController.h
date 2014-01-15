@@ -7,6 +7,11 @@
 //
 
 #import <UIKit/UIKit.h>
+typedef  enum{
+    up =1,
+    down = 2,
+    stop = 0,
+}ScrollFlag;
 
 @class LineViewController;
 
@@ -16,7 +21,8 @@
     CGPoint _dragStartLocation;
     NSInteger _cellIndex;
     
-    NSInteger _continueToScroll; //TODO ENUM: UP/DOWN/NONE
+    NSInteger scrollFlagForV;       //垂直滚动标识
+    NSInteger scrollFlagForH;       //水平滚动标识
     
 }
 
