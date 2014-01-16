@@ -222,10 +222,6 @@
             NSInteger numCount = [self.destnationLine.collectionView  numberOfItemsInSection:0];
             selectedIndex = [NSIndexPath indexPathForRow:numCount inSection:0];
         }
-        //无元素插入
-        if ([self.destnationLine.collectionView numberOfItemsInSection:0]==0) {
-            selectedIndex = [NSIndexPath indexPathForRow:0 inSection:0];
-        }
         if(!self.destnationLine || !selectedIndex) { //没拖到line上的情况
             selectedIndex = [NSIndexPath indexPathForItem:_cellIndex inSection:0];
             self.destnationLine = self.sourceLine;
