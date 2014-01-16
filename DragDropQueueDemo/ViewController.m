@@ -215,11 +215,12 @@
             }
             l = nil;
         }
-        
         NSIndexPath *selectedIndex = [self.destnationLine.collectionView indexPathForItemAtPoint:locationInCollectionView];
+        //insert item after a cell
         UIView *cell = [self.destnationLine.collectionView cellForItemAtIndexPath:selectedIndex];
         if (locationInCollectionView.x > cell.center.x) {
-            selectedIndex = [NSIndexPath indexPathForRow:selectedIndex.item+1 inSection:0];
+            NSInteger numCount = [self.destnationLine.collectionView  numberOfItemsInSection:0];
+            selectedIndex = [NSIndexPath indexPathForRow:numCount inSection:0];
         }
         //无元素插入
         if ([self.destnationLine.collectionView numberOfItemsInSection:0]==0) {
